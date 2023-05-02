@@ -1,7 +1,9 @@
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from settings import SCOPES
 
 
 load_dotenv()
@@ -9,11 +11,11 @@ load_dotenv()
 
 class GoogleCalendar:
 
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
-    FILE_PATH = os.getenv('FILE_PATH')
+    SCOPES = SCOPES
+    private_key = os.getenv('private_key')
 
     def __init__(self):
-        credentials = service_account.Credentials.from_service_account_file(filename=self.FILE_PATH, scopes=self.SCOPES)
+        credentials = service_account.Credentials.from_service_account_file(filename=self.private_key, scopes=self.SCOPES)
         self.service = build('calendar', 'v3', credentials=credentials)
 
     def get_calendar_list(self):
@@ -30,4 +32,20 @@ class GoogleCalendar:
         return self.service.events().list(calendarId=calendarId).execute()
 
 
+def search_people_who_have_birthday_today(birthdays):
+    today_month_day = str(datetime.today().date())[5:]
+    peoples_who_have_birthday_today = {i_people: i_date for i_people, i_date in birthdays.items()
+                                       if i_date[5:] == today_month_day}
+    return peoples_who_have_birthday_today
+
+
+def calculate_age_of_peoples(peoples):
+    pass
+
+
 obj = GoogleCalendar()
+events = obj.get_events()
+
+birthdays_of_all_peoples = {event.get('summary'): event.get('start').get('date') for event in events.get('items')}
+
+peoples_who_today_birthday = search_people_who_have_birthday_today(birthdays_of_all_peoples)
