@@ -1,24 +1,37 @@
+import json
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from google.auth._service_account_info import from_dict
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import settings
-import locale
-
-locale.setlocale(locale.LC_TIME, 'ru_RU')
 
 load_dotenv()
 
 
-class GoogleCalendar:
+class CustomCredential(service_account.Credentials):
 
+    @staticmethod
+    def from_filename(filename, require=None, use_rsa_signer=True):
+        data = json.loads(filename)
+        return data, from_dict(data, require=require, use_rsa_signer=use_rsa_signer)
+
+    @classmethod
+    def from_service_account_file(cls, filename, **kwargs):
+        info, signer = cls.from_filename(
+            filename, require=["client_email", "token_uri"]
+        )
+        return cls._from_signer_and_info(signer, info, **kwargs)
+
+
+class GoogleCalendar:
     SCOPES = settings.SCOPES
     private_key = os.getenv('private_key')
     calendar_id = os.getenv('calendar_id')
 
     def __init__(self):
-        credentials = service_account.Credentials.from_service_account_file(filename=self.private_key, scopes=self.SCOPES)
+        credentials = CustomCredential.from_service_account_file(filename=self.private_key, scopes=self.SCOPES)
         self.service = build('calendar', 'v3', credentials=credentials)
 
     def get_calendar_list(self):
@@ -31,7 +44,6 @@ class GoogleCalendar:
         return self.service.calendarList().insert(body=calendar_list_entry).execute()
 
     def get_events(self):
-
         return self.service.events().list(calendarId=self.calendar_id).execute()
 
 
@@ -44,7 +56,8 @@ def search_people_who_have_birthday_today(birthdays):
 
 def calculate_age_of_peoples(peoples):
     today_year = datetime.today().year
-    age_of_peoples = {i_people: today_year - datetime.strptime(i_date, '%Y-%m-%d').year for i_people, i_date in peoples.items()}
+    age_of_peoples = {i_people: today_year - datetime.strptime(i_date, '%Y-%m-%d').year for i_people, i_date in
+                      peoples.items()}
     return age_of_peoples
 
 
@@ -60,7 +73,7 @@ def determine_the_end_of_the_age(age):
     return age
 
 
-def output_peoples_who_have_birthday_today(peoples):
+def congratulation_peoples_who_have_birthday_today(peoples):
     celebration_word = 'празднует' if len(peoples) <= 1 else 'празднуют'
     congratulation_phrase = f'Сегодня {celebration_word} свой день рождения '
 
@@ -83,11 +96,26 @@ def nearest_peoples_who_have_birthday(peoples):
 
 
 def convert_date_to_readable_form(date_of_birth: str):
-    date_of_birth = datetime.strptime(date_of_birth, '%m-%d').strftime('%d-%B').replace('-', ' ').replace('0', '')
+    months = {
+        '1': 'января',
+        '2': 'февраля',
+        '3': 'марта',
+        '4': 'апреля',
+        '5': 'мая',
+        '6': 'июня',
+        '7': 'июля',
+        '8': 'августа',
+        '9': 'сентября',
+        '10': 'октября',
+        '11': 'ноября',
+        '12': 'декабря'}
+    date_of_birth = date_of_birth.replace('0', '').split('-')
+    month = months.get(date_of_birth[0])
+    date_of_birth = f'{date_of_birth[1]} {month}'
     return date_of_birth
 
 
-def output_peoples_who_nearest_birthday(nearest_birthday_of_people):
+def congratulation_peoples_who_nearest_birthday(nearest_birthday_of_people):
     age_of_people_who_nearest_birthday = calculate_age_of_peoples(nearest_birthday_of_people)
     people, age = age_of_people_who_nearest_birthday.popitem()
     age = determine_the_end_of_the_age(age)
@@ -100,18 +128,42 @@ def output_peoples_who_nearest_birthday(nearest_birthday_of_people):
     return congratulation_phrase
 
 
-if __name__ == '__main__':
-
-    calendar = GoogleCalendar()
-
+def birthdays_of_all_people_from_calendar(calendar):
     events = calendar.get_events()
-    birthdays_of_all_peoples = {event.get('summary'): event.get('start').get('date') for event in events.get('items')}
+    return {event.get('summary'): event.get('start').get('date') for event in events.get('items')}
 
-    peoples_who_today_birthday = search_people_who_have_birthday_today(birthdays_of_all_peoples)
+
+def congratulation_phrase_with_data(birthdays):
+    peoples_who_today_birthday = search_people_who_have_birthday_today(birthdays)
 
     if peoples_who_today_birthday:
         age_of_peoples_who_today_birthday = calculate_age_of_peoples(peoples_who_today_birthday)
-        print(output_peoples_who_have_birthday_today(age_of_peoples_who_today_birthday))
-    else:
-        nearest_birthday = nearest_peoples_who_have_birthday(birthdays_of_all_peoples)
-        print(output_peoples_who_nearest_birthday(nearest_birthday))
+        return congratulation_peoples_who_have_birthday_today(age_of_peoples_who_today_birthday)
+
+    nearest_birthday = nearest_peoples_who_have_birthday(birthdays)
+    return congratulation_peoples_who_nearest_birthday(nearest_birthday)
+
+
+def handler(event, context):
+    """
+    Entry-point for Serverless Function.
+    :param event: request payload.
+    :param context: information about current execution context.
+    :return: response to be serialized as JSON.
+    """
+
+    text = congratulation_phrase_with_data(birthdays_of_all_peoples)
+
+    return {
+        'version': event['version'],
+        'session': event['session'],
+        'response': {
+            'text': text,
+            'end_session': 'true'
+        },
+    }
+
+
+google_calendar = GoogleCalendar()
+
+birthdays_of_all_peoples = birthdays_of_all_people_from_calendar(google_calendar)

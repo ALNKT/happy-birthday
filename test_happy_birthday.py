@@ -2,8 +2,8 @@ import unittest
 
 import settings
 from happy_birthday import search_people_who_have_birthday_today, calculate_age_of_peoples, \
-    determine_the_end_of_the_age, output_peoples_who_have_birthday_today, nearest_peoples_who_have_birthday, \
-    convert_date_to_readable_form, output_peoples_who_nearest_birthday
+    determine_the_end_of_the_age, congratulation_peoples_who_have_birthday_today, nearest_peoples_who_have_birthday, \
+    convert_date_to_readable_form, congratulation_peoples_who_nearest_birthday
 from freezegun import freeze_time
 
 
@@ -34,14 +34,14 @@ class TestHappyBirthday(unittest.TestCase):
                 age = determine_the_end_of_the_age(int(i_age[:2]))
                 self.assertEqual(age, i_age)
 
-    def test_output_peoples_who_have_birthday_today(self):
+    def test_congratulation_peoples_who_have_birthday_today(self):
         people_1 = 'Иван Иванов, 33 года'
         people_2 = 'Иван Иванов, 33 года! Петр Петров, 35 лет'
         peoples_hwo_have_today_birthday = {'Иван Иванов': 33, 'Петр Петров': 35}
-        output_phrase_1 = output_peoples_who_have_birthday_today({'Иван Иванов': 33})
+        output_phrase_1 = congratulation_peoples_who_have_birthday_today({'Иван Иванов': 33})
         self.assertTrue(people_1 in output_phrase_1)
 
-        output_phrase_2 = output_peoples_who_have_birthday_today(peoples_hwo_have_today_birthday)
+        output_phrase_2 = congratulation_peoples_who_have_birthday_today(peoples_hwo_have_today_birthday)
         self.assertTrue(people_2 in output_phrase_2)
 
     def test_nearest_peoples_who_have_birthday(self):
@@ -53,10 +53,10 @@ class TestHappyBirthday(unittest.TestCase):
         date_of_birth = convert_date_to_readable_form('05-02')
         self.assertEqual(date_of_birth, '2 мая')
 
-    def test_output_peoples_who_nearest_birthday(self):
+    def test_congratulation_peoples_who_nearest_birthday(self):
         people = 'Иван Иванов! 9 мая исполнится 33 года'
         with freeze_time(self.today):
-            congratulation_phrase = output_peoples_who_nearest_birthday(self.nearest_birthday)
+            congratulation_phrase = congratulation_peoples_who_nearest_birthday(self.nearest_birthday)
             self.assertTrue(people in congratulation_phrase)
 
 
