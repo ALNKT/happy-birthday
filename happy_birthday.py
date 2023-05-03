@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import settings
+import locale
 
+locale.setlocale(locale.LC_TIME, 'ru_RU')
 
 load_dotenv()
 
@@ -64,9 +66,37 @@ def output_peoples_who_have_birthday_today(peoples):
 
     for i_people, i_date in peoples.items():
         i_date = determine_the_end_of_the_age(i_date)
-        congratulation_phrase += f'{i_people} - {i_date}! '
+        congratulation_phrase += f'{i_people}, {i_date}! '
 
     congratulation_phrase += f'{settings.my_name}, не забудьте поздравить!'
+    return congratulation_phrase
+
+
+def nearest_peoples_who_have_birthday(peoples):
+    today = datetime.today().month
+    nearest_birthdays = {i_people: i_date for i_people, i_date in peoples.items()
+                         if datetime.strptime(i_date, '%Y-%m-%d').month >= today}
+    sorted_nearest_birthdays = dict(sorted(nearest_birthdays.items(), key=lambda item: item[1][5:], reverse=True))
+    nearest_birthday_of_people = sorted_nearest_birthdays.popitem()
+    nearest_birthday_of_people = {nearest_birthday_of_people[0]: nearest_birthday_of_people[1]}
+    return nearest_birthday_of_people
+
+
+def convert_date_to_readable_form(date_of_birth: str):
+    date_of_birth = datetime.strptime(date_of_birth, '%m-%d').strftime('%d-%B').replace('-', ' ').replace('0', '')
+    return date_of_birth
+
+
+def output_peoples_who_nearest_birthday(nearest_birthday_of_people):
+    age_of_people_who_nearest_birthday = calculate_age_of_peoples(nearest_birthday_of_people)
+    people, age = age_of_people_who_nearest_birthday.popitem()
+    age = determine_the_end_of_the_age(age)
+    date_of_birthday = nearest_birthday_of_people.popitem()[1][5:]
+    date_of_birthday = convert_date_to_readable_form(date_of_birthday)
+
+    congratulation_phrase = f'Сегодня ваши друзья ничего не празднуют! ' \
+                            f'Ближайший день рождения будет праздновать {people}! ' \
+                            f'{date_of_birthday} исполнится {age}! Не забудьте поздравить!'
     return congratulation_phrase
 
 
@@ -79,6 +109,9 @@ if __name__ == '__main__':
 
     peoples_who_today_birthday = search_people_who_have_birthday_today(birthdays_of_all_peoples)
 
-    age_of_peoples_who_today_birthday = calculate_age_of_peoples(peoples_who_today_birthday)
-
-    print(output_peoples_who_have_birthday_today(age_of_peoples_who_today_birthday))
+    if peoples_who_today_birthday:
+        age_of_peoples_who_today_birthday = calculate_age_of_peoples(peoples_who_today_birthday)
+        print(output_peoples_who_have_birthday_today(age_of_peoples_who_today_birthday))
+    else:
+        nearest_birthday = nearest_peoples_who_have_birthday(birthdays_of_all_peoples)
+        print(output_peoples_who_nearest_birthday(nearest_birthday))
