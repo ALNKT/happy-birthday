@@ -86,9 +86,10 @@ def congratulation_peoples_who_have_birthday_today(peoples):
 
 
 def nearest_peoples_who_have_birthday(peoples):
-    today = datetime.today().month
+    today = datetime.today()
     nearest_birthdays = {i_people: i_date for i_people, i_date in peoples.items()
-                         if datetime.strptime(i_date, '%Y-%m-%d').month >= today}
+                         if datetime.strptime(i_date, '%Y-%m-%d').month >= today.month
+                         and datetime.strptime(i_date, '%Y-%m-%d').day > today.day}
     sorted_nearest_birthdays = dict(sorted(nearest_birthdays.items(), key=lambda item: item[1][5:], reverse=True))
     nearest_birthday_of_people = sorted_nearest_birthdays.popitem()
     nearest_birthday_of_people = {nearest_birthday_of_people[0]: nearest_birthday_of_people[1]}
