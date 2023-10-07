@@ -130,26 +130,6 @@ def get_all_events_from_calendar(calendar):
     return events
 
 
-def convert_date_to_readable_fmt(date_of_birth: str):
-    months = {
-        '1': 'января',
-        '2': 'февраля',
-        '3': 'марта',
-        '4': 'апреля',
-        '5': 'мая',
-        '6': 'июня',
-        '7': 'июля',
-        '8': 'августа',
-        '9': 'сентября',
-        '10': 'октября',
-        '11': 'ноября',
-        '12': 'декабря'}
-    date_of_birth = date_of_birth.replace('0', '').split('-')
-    month = months.get(date_of_birth[0])
-    date_of_birth = f'{date_of_birth[1]} {month}'
-    return date_of_birth
-
-
 def generate_congratulation(events):
     events_today = [event for event in events if event.check_event_today()]
     if events_today:
