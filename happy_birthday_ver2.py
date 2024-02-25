@@ -66,15 +66,15 @@ class Event:
     def get_date_of_birthday_fmt(self):
         date_of_birthday = datetime.strftime(self.get_date_of_birthday(), '%d-%m').split('-')
         months = {
-            '1': 'января',
-            '2': 'февраля',
-            '3': 'марта',
-            '4': 'апреля',
-            '5': 'мая',
-            '6': 'июня',
-            '7': 'июля',
-            '8': 'августа',
-            '9': 'сентября',
+            '01': 'января',
+            '02': 'февраля',
+            '03': 'марта',
+            '04': 'апреля',
+            '05': 'мая',
+            '06': 'июня',
+            '07': 'июля',
+            '08': 'августа',
+            '09': 'сентября',
             '10': 'октября',
             '11': 'ноября',
             '12': 'декабря'}
@@ -149,6 +149,7 @@ def generate_congratulation(events):
         event.calculate_age()
         phrase += '{people} - исполнится {age}! '.format(people=event.get_people(), age=event.get_age())
     phrase += f'{settings.my_name}, не забудьте поздравить!'
+    print(phrase)
     return phrase
 
 
@@ -175,3 +176,5 @@ def handler(event, context):
 google_calendar = GoogleCalendar()
 
 all_events_from_calendar = get_all_events_from_calendar(google_calendar)
+
+generate_congratulation(all_events_from_calendar)
